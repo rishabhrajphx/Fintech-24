@@ -65,3 +65,19 @@ def train_model(X, y):
 
     return model, train_score, test_score
 
+def plot_predictions(df, predictions, last_n_days=30):
+    """
+    Plot actual vs predicted prices
+    """
+    plt.figure(figsize=(12, 6))
+    plt.plot(df.index[-last_n_days:], df['Close'][-last_n_days:], label='Actual Price', color='blue')
+    plt.plot(df.index[-last_n_days:], predictions[-last_n_days:], label='Predicted Price', color='red', linestyle='--')
+    plt.title('S&P 500 - Actual vs Predicted Prices')
+    plt.xlabel('Date')
+    plt.ylabel('Price')
+    plt.legend()
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
