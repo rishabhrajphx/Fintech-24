@@ -81,3 +81,36 @@ def plot_predictions(df, predictions, last_n_days=30):
     plt.tight_layout()
     plt.show()
 
+def main():
+    # Get S&P 500 data
+    print("Fetching S&P 500 data...")
+    df = get_stock_data()
+
+    # Prepare data
+    X, y = prepare_data(df)
+
+    # Train model
+    print("\nTraining model...")
+    model, train_score, test_score = train_model(X, y)
+
+    print(f"\nModel Performance:")
+    print(f"Training Score: {train_score:.4f}")
+    print(f"Testing Score: {test_score:.4f}")
+
+    # Make predictions
+    predictions = model.predict(X)
+
+    # Plot results
+    plot_predictions(df, predictions)
+
+    # Predict next day
+    last_data = X.iloc[-1:].values
+    next_day_pred = model.predict(last_data)[0]
+    last_close = df['Close'].iloc[-1]
+
+    print(f"\nLast Close: ${last_close:.2f}")
+    print(f"Next Day Prediction: ${next_day_pred:.2f}")
+    print(f"Predicted Change: {((next_day_pred - last_close) / last_close * 100):.2f}%")
+
+if __name__ == "__main__":
+    main()
