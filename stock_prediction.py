@@ -36,3 +36,32 @@ def prepare_data(df):
     
     return X, y
 
+def calculate_rsi(data, periods=14):
+    """
+    Calculate RSI technical indicator
+    """
+    delta = data.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=periods).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=periods).mean()
+
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def train_model(X, y):
+    """
+    Train the prediction model
+    """
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Create and train the model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    # Calculate accuracy
+    train_score = model.score(X_train, y_train)
+    test_score = model.score(X_test, y_test)
+
+    return model, train_score, test_score
+
