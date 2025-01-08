@@ -1,53 +1,65 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import streamlit as st
+import plotly.express as px
 
-def estimate_pi(num_points=10000):
-    # Generate random points
-    x = np.random.uniform(-1, 1, num_points)
-    y = np.random.uniform(-1, 1, num_points)
+def monte_carlo_option_pricing(S, K, T, r, sigma, simulations=100, option_type="call"):
+    """
+    Monte Carlo simulation for option pricing.
 
-    # Calculate distance from origin
-    distances = np.sqrt(x**2 + y**2)
+    Parameters:
+        S: Current stock price
+        K: Strike price
+        T: Time to maturity (in years)
+        r: Risk-free interest rate
+        sigma: Volatility (standard deviation of returns)
+        simulations: Number of Monte Carlo simulations
+        option_type: "call" or "put"
 
-    # Count points inside the circle
-    points_inside = np.sum(distances <= 1)
+    Returns:
+        Estimated option price and simulated price paths.
 
-    # Calculate pi: (points inside circle / total points) * 4
-    pi_estimate = 4 * points_inside / num_points
+    """
+    dt = T / 252  # Assume 252 trading days in a year
+    price_paths = np.zeros((simulations, 252))
+    price_paths[:, 0] = S
 
-    return pi_estimate, x, y, distances
+    for t in range(1, 252):
+        z = np.random.standard_normal(simulations)
+        price_paths[:, t] = price_paths[:, t - 1] * np.exp((r - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z)
 
-def visualize_simulation(x, y, distances):
-    plt.figure(figsize=(10, 10))
+    if option_type == "call":
+        payoffs = np.maximum(price_paths[:, -1] - K, 0)
+    else:
+        payoffs = np.maximum(K - price_paths[:, -1], 0)
 
-    # Plot points inside circle in blue
-    plt.scatter(x[distances <= 1], y[distances <= 1], c='blue', alpha=0.6, label='Inside')
+    option_price = np.exp(-r * T) * np.mean(payoffs)
+    return option_price, price_paths
 
-    # Plot points outside circle in red
-    plt.scatter(x[distances > 1], y[distances > 1], c='red', alpha=0.6, label='Outside')
+def plot_simulated_paths_interactive(price_paths):
+    """
+    Plot interactive simulated price paths for Monte Carlo simulation.
 
-    # Draw the circle
-    circle = plt.Circle((0, 0), 1, fill=False, color='black')
-    plt.gca().add_artist(circle)
+    Parameters:
+        price_paths: Simulated price paths from Monte Carlo simulation.
+    """
+    # Combine the simulated price paths into a single DataFrame
+    df_paths = pd.DataFrame(price_paths).T
+    df_paths.columns = [f"Path {i+1}" for i in range(price_paths.shape[0])]
 
-    plt.axis('equal')
-    plt.grid(True)
-    plt.legend()
-    plt.title('Monte Carlo Simulation for π Estimation')
-    plt.show()
+    # Create Plotly figure for simulated paths
+    fig = px.line(
+        df_paths,
+        labels={"index": "Time Steps", "value": "Stock Price"},
+        title="Simulated Price Paths",
+    )
+    fig.update_layout(
+        legend_title_text="Simulation Paths",
+        xaxis_title="Time Steps",
+        yaxis_title="Stock Price",
+        template="plotly_dark",
+    )
 
-def main():
-    # Run simulation
-    num_points = 100000
-    estimated_pi, x, y, distances = estimate_pi(num_points)
-
-    # Print results
-    print(f"Estimated π: {estimated_pi:.6f}")
-    print(f"Actual π: {np.pi:.6f}")
-    print(f"Difference: {abs(estimated_pi - np.pi):.6f}")
-
-    # Visualize results
-    visualize_simulation(x, y, distances)
-
-if __name__ == "__main__":
-    main()
+    # Display the interactive plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
